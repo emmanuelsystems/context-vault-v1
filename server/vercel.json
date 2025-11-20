@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "server",
   "rewrites": [
     {
       "source": "/mcp",
