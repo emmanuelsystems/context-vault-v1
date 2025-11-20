@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/mcp",
-      "destination": "/api/mcp"
+      "destination": "/server/api/mcp.ts"
     },
     {
       "source": "/(.+)",
@@ -10,7 +10,7 @@
     }
   ],
   "functions": {
-    "api/mcp.ts": {
+    "server/api/mcp.ts": {
       "maxDuration": 60
     },
     "api/server.ts": {
