@@ -1,13 +1,22 @@
+```json
 {
   "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    },
     {
       "source": "/(.+)",
       "destination": "/api/server"
     }
   ],
   "functions": {
+    "api/mcp.ts": {
+      "maxDuration": 60
+    },
     "api/server.ts": {
       "maxDuration": 60
     }
   }
 }
+```
