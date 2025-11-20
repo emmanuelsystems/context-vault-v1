@@ -1,14 +1,33 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import * as z from "zod";
 
 const server = new McpServer({
-    tools: {
-        cv_health_check: async () => ({
-            status: "ok",
-            message: "MCP Server is running",
-        }),
-    },
+    name: "context-vault-mcp",
+    version: "1.0.0",
 });
 
-export async function handleRequest(req: any, res: any) {
-    return server.handleHttp(req, res);
-}
+// Register health check tool
+server.registerTool(
+    "cv_health_check",
+    {
+        title: "Health Check",
+        description: "Check if the MCP server is running",
+        inputSchema: {},
+        outputSchema: {
+            status: z.string(),
+            message: z.string(),
+        },
+    },
+    async () => {
+        const output = {
+            status: "ok",
+            message: "MCP Server is running",
+        };
+        return {
+            content: [{ type: "text", text: JSON.stringify(output) }],
+            structuredContent: output,
+        };
+    }
+);
+
+export { server };

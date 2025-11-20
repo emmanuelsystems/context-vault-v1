@@ -1,4 +1,4 @@
-import { handleRequest } from "../src/index";
+import { handleRequest } from "../src/index.js"; // MUST have .js extension
 
 export default async function handler(req: any, res: any) {
     try {
