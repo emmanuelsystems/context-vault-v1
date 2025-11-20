@@ -1,6 +1,18 @@
 {
-  "rewrites": [{ "source": "/(.+)", "destination": "/api/server" }],
+  "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "/server/api/mcp.ts"
+    },
+    {
+      "source": "/(.+)",
+      "destination": "/api/server"
+    }
+  ],
   "functions": {
+    "server/api/mcp.ts": {
+      "maxDuration": 60
+    },
     "api/server.ts": {
       "maxDuration": 60
     }
