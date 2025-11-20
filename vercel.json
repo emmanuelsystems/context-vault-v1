@@ -1,20 +1,13 @@
 {
-  "version": 2,
+  "rootDirectory": "server",
   "rewrites": [
     {
       "source": "/mcp",
-      "destination": "/server/api/mcp.ts"
-    },
-    {
-      "source": "/(.+)",
-      "destination": "/api/server"
+      "destination": "/api/mcp.ts"
     }
   ],
   "functions": {
-    "server/api/mcp.ts": {
-      "maxDuration": 60
-    },
-    "api/server.ts": {
+    "api/mcp.ts": {
       "maxDuration": 60
     }
   }
