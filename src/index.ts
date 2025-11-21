@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { PrismaClient } from "@prisma/client";
+import prisma from "./lib/prisma.js";
 import * as z from "zod";
 
 // Create a single Prisma client instance
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 const server = new McpServer({
     name: "context-vault-mcp",

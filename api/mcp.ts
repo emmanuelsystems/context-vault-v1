@@ -17,8 +17,12 @@ export default async function handler(req: any, res: any) {
         // Connect server to transport and handle the request
         await server.connect(transport);
         await transport.handleRequest(req, res, req.body);
-    } catch (err) {
+    } catch (err: any) {
         console.error("[MCP ERROR]", err);
-        res.status(500).json({ error: "MCP server error" });
+        res.status(500).json({
+            error: "MCP server error",
+            details: err?.message,
+            stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined
+        });
     }
 }
