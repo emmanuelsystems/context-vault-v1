@@ -14,11 +14,11 @@
     "@prisma/client": "^7.0.0",
     "@prisma/extension-accelerate": "^2.0.2",
     "dotenv": "^17.2.3",
+    "prisma": "^7.0.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "prisma": "^7.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
