@@ -13,10 +13,13 @@
   "packageManager": "pnpm@9.4.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
+    "@prisma/client": "^7.0.0",
     "mcp-handler": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "dotenv": "^17.2.3",
+    "prisma": "^7.0.0",
     "typescript": "^5.9.3"
   }
 }

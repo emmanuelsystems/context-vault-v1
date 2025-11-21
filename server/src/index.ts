@@ -1,33 +1,47 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import * as z from "zod";
+// server/src/index.ts
+import { Server } from "@modelcontextprotocol/sdk/server";
+import { PrismaClient } from "@prisma/client";
 
-const server = new McpServer({
-    name: "context-vault-mcp",
+const prisma = new PrismaClient();
+
+const server = new Server({
+    name: "Context Vault MCP Server",
     version: "1.0.0",
 });
 
-// Register health check tool
-server.registerTool(
+server.tool(
     "cv_health_check",
-    {
-        title: "Health Check",
-        description: "Check if the MCP server is running",
-        inputSchema: {},
-        outputSchema: {
-            status: z.string(),
-            message: z.string(),
-        },
-    },
+    "Checks that the MCP server and database are reachable",
+    {},
     async () => {
-        const output = {
-            status: "ok",
-            message: "MCP Server is running",
-        };
-        return {
-            content: [{ type: "text", text: JSON.stringify(output) }],
-            structuredContent: output,
-        };
+        try {
+            // Simple round-trip to Neon
+            const result = await prisma.$queryRaw`SELECT 1::int as "ok"`;
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `MCP server is running. DB check: ${JSON.stringify(result)}`
+                    },
+                ],
+            };
+        } catch (err: any) {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `MCP server is running, but DB check failed: ${err?.message ?? String(
+                            err
+                        )}`,
+                    },
+                ],
+            };
+        }
     }
 );
 
-export { server };
+// keep your existing handler
+export async function handleRequest(req: any, res: any) {
+    return server.handleHttp(req, res);
+}
