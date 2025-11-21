@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import prisma from "./lib/prisma.js";
+import prisma from "./lib/prisma";
 import * as z from "zod";
 
 // Create a single Prisma client instance
