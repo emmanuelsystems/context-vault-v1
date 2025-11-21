@@ -1,9 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client/edge";
+import { withAccelerate } from "@prisma/extension-accelerate";
 import * as z from "zod";
 
 // Create a single Prisma client for the whole server
-const prisma = new PrismaClient();
+const prisma = new PrismaClient().$extends(withAccelerate());
 
 const server = new McpServer({
     name: "context-vault-mcp",
@@ -24,8 +25,8 @@ server.registerTool(
     },
     async () => {
         try {
-            // Simple DB ping – if this fails, Neon / Postgres isn’t reachable
-            await prisma.$queryRaw`SELECT 1`;
+            // DB ping — verifies Neon/Postgres health
+            await prisma.$queryRaw(Prisma.sql`SELECT 1`);
 
             const output = {
                 status: "ok",
