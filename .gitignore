@@ -10,4 +10,3 @@ node_modules
 *.map
 !prisma.config.js
 dist
-src/generated
