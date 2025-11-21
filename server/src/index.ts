@@ -1,47 +1,55 @@
-// server/src/index.ts
-import { Server } from "@modelcontextprotocol/sdk/server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PrismaClient } from "@prisma/client";
+import * as z from "zod";
 
+// Create a single Prisma client for the whole server
 const prisma = new PrismaClient();
 
-const server = new Server({
-    name: "Context Vault MCP Server",
+const server = new McpServer({
+    name: "context-vault-mcp",
     version: "1.0.0",
 });
 
-server.tool(
+// Register health check tool
+server.registerTool(
     "cv_health_check",
-    "Checks that the MCP server and database are reachable",
-    {},
+    {
+        title: "Health Check",
+        description: "Check if the MCP server and database are running",
+        inputSchema: {},
+        outputSchema: {
+            status: z.string(),
+            message: z.string(),
+        },
+    },
     async () => {
         try {
-            // Simple round-trip to Neon
-            const result = await prisma.$queryRaw`SELECT 1::int as "ok"`;
+            // Simple DB ping – if this fails, Neon / Postgres isn’t reachable
+            await prisma.$queryRaw`SELECT 1`;
+
+            const output = {
+                status: "ok",
+                message: "MCP server is running and database connection is healthy.",
+            };
 
             return {
-                content: [
-                    {
-                        type: "text",
-                        text: `MCP server is running. DB check: ${JSON.stringify(result)}`
-                    },
-                ],
+                content: [{ type: "text", text: JSON.stringify(output) }],
+                structuredContent: output,
             };
-        } catch (err: any) {
+        } catch (error: any) {
+            const output = {
+                status: "error",
+                message:
+                    "MCP server is up, but database check failed: " +
+                    (error?.message ?? "unknown error"),
+            };
+
             return {
-                content: [
-                    {
-                        type: "text",
-                        text: `MCP server is running, but DB check failed: ${err?.message ?? String(
-                            err
-                        )}`,
-                    },
-                ],
+                content: [{ type: "text", text: JSON.stringify(output) }],
+                structuredContent: output,
             };
         }
     }
 );
 
-// keep your existing handler
-export async function handleRequest(req: any, res: any) {
-    return server.handleHttp(req, res);
-}
+export { server };
