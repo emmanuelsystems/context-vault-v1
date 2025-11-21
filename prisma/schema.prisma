@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+/* ==== Core Enums ==== */
+
+enum CoreBlockKind {
+  CANON
+  SECONDARY
+}
+
+enum RunStatus {
+  PENDING
+  IN_PROGRESS
+  PASS
+  FAIL
+}
+
+/* ==== Core Entities ==== */
+
+/**
+ * Play: a structured workflow / recipe.
+ */
+model Play {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  runs   Run[]
+  assets Asset[]
+}
+
+/**
+ * CoreBlock: canonical knowledge units (Canon / Secondary).
+ */
+model CoreBlock {
+  id        String        @id @default(cuid())
+  kind      CoreBlockKind
+  title     String
+  content   String        // free-form text or JSON string
+  tags      String?       // comma-separated for now
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+/**
+ * Shape: structured output templates (e.g. JSON schema, workbook section).
+ */
+model Shape {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  schemaJson  String?  // JSON schema or prompt-scoped structure
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  runs   Run[]
+  assets Asset[]
+}
+
+/**
+ * DAB: Digital AI Bot definition / role.
+ */
+model Dab {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  role        String?     // e.g. "Research Synthesizer"
+  systemPrompt String?    // main system instructions
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  runs Run[]
+}
+
+/**
+ * Run: atomic unit of work – one execution of a Play.
+ */
+model Run {
+  id          String     @id @default(cuid())
+
+  playId      String?
+  play        Play?      @relation(fields: [playId], references: [id])
+
+  shapeId     String?
+  shape       Shape?     @relation(fields: [shapeId], references: [id])
+
+  dabId       String?
+  dab         Dab?       @relation(fields: [dabId], references: [id])
+
+  status      RunStatus  @default(PENDING)
+  configJson  String?    // structured config for the run
+  judge       String?    // pass/fail notes or rubric result
+  resultJson  String?    // raw LLM output / logs
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  asset       Asset?
+}
+
+/**
+ * Asset: banked, reusable outputs (quote-locked content).
+ */
+model Asset {
+  id        String   @id @default(cuid())
+
+  runId     String?  @unique
+  run       Run?     @relation(fields: [runId], references: [id])
+
+  playId    String?
+  play      Play?    @relation(fields: [playId], references: [id])
+
+  shapeId   String?
+  shape     Shape?   @relation(fields: [shapeId], references: [id])
+
+  title     String
+  excerpt   String?
+  content   String?  // full body or JSON payload
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
