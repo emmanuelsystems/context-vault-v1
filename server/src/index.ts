@@ -1,22 +1,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { PrismaClient, Prisma } from "@prisma/client/edge";
-import { withAccelerate } from "@prisma/extension-accelerate";
+import { PrismaClient } from "@prisma/client";
 import * as z from "zod";
 
-// Create a single Prisma client for the whole server
-const prisma = new PrismaClient().$extends(withAccelerate());
+// Create a single Prisma client instance
+const prisma = new PrismaClient();
 
 const server = new McpServer({
     name: "context-vault-mcp",
     version: "1.0.0",
 });
 
-// Register health check tool
+// --- Health Check Tool ---
 server.registerTool(
     "cv_health_check",
     {
         title: "Health Check",
-        description: "Check if the MCP server and database are running",
+        description: "Verify MCP server + database connection",
         inputSchema: {},
         outputSchema: {
             status: z.string(),
@@ -25,8 +24,8 @@ server.registerTool(
     },
     async () => {
         try {
-            // DB ping — verifies Neon/Postgres health
-            await prisma.$queryRaw(Prisma.sql`SELECT 1`);
+            // Ping database — will throw if not connected
+            await prisma.$queryRaw`SELECT 1`;
 
             const output = {
                 status: "ok",
@@ -41,7 +40,7 @@ server.registerTool(
             const output = {
                 status: "error",
                 message:
-                    "MCP server is up, but database check failed: " +
+                    "MCP is running but database connection failed: " +
                     (error?.message ?? "unknown error"),
             };
 
