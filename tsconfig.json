@@ -4,7 +4,7 @@
     "references": [
         // Point to the specific config files within the sub-directories
         {
-            "path": "./tsconfig.node.json"
+            "path": "./tsconfig.json"
         },
         {
             "path": "./web/tsconfig.app.json"
