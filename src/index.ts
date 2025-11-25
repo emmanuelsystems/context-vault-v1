@@ -9,7 +9,7 @@ const server = new McpServer({
     version: "1.0.0",
 });
 
-// --- Health Check Tool (Tool you already have) ---
+// --- Health Check Tool (cv_health_check) ---
 server.registerTool(
     "cv_health_check",
     {
@@ -51,13 +51,12 @@ server.registerTool(
     }
 );
 
-// --- Context Retrieval Tool (The New Tool) ---
+// --- Context Retrieval Tool (cv_list_plays) ---
 server.registerTool(
     "cv_list_plays",
     {
         title: "List Available Plays",
         description: "Retrieves all Plays (workflows) accessible by the current workspace.",
-        // The input requires the workspace_id for the multi-tenancy check
         inputSchema: z.object({
             workspace_id: z.string().describe("The unique ID of the client workspace (used for scoping)."),
         }),
@@ -70,23 +69,39 @@ server.registerTool(
         ),
     },
     async ({ workspace_id }) => {
-        // Query the database using the injected prisma client
-        const plays = await prisma.play.findMany({
-            where: {
-                workspaceId: workspace_id, // CRITICAL: Enforces multi-tenancy
-            },
-            select: {
-                id: true,
-                name: true,
-                description: true,
-            },
-        });
+        try {
+            // CRITICAL: Database Query wrapped in try/catch to prevent 424 TaskGroup error
+            const plays = await prisma.play.findMany({
+                where: {
+                    workspaceId: workspace_id, // We know this ID is client_123_syndicate
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                },
+            });
 
-        // The tool output adheres to the required MCP structure
-        return {
-            content: [{ type: "text", text: `Found ${plays.length} Plays.` }],
-            structuredContent: plays,
-        };
+            // Return success with retrieved data
+            return {
+                content: [{ type: "text", text: `Found ${plays.length} Plays for workspace ${workspace_id}.` }],
+                structuredContent: plays,
+            };
+
+        } catch (error: any) {
+            // If the query fails (e.g., connection issue, schema mismatch), return a clean error
+            console.error("Database Query Failed in cv_list_plays:", error);
+
+            const output = {
+                status: 'error',
+                message: `Failed to retrieve plays. Check server logs: ${error.message || 'Unknown database error.'}`
+            };
+
+            return {
+                content: [{ type: "text", text: output.message }],
+                structuredContent: output,
+            };
+        }
     }
 );
 
