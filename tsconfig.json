@@ -1,13 +1,19 @@
-// tsconfig.json (Root) - FINAL CORRECTED VERSION
 {
     "files": [],
     "references": [
-        // Point to the specific config files within the sub-directories
-        {
-            "path": "./tsconfig.json"
-        },
+        // 1. Reference the configuration file for the React/Web logic
         {
             "path": "./web/tsconfig.app.json"
         }
-    ]
+        // Remove the comma and the incorrect path to the non-existent backend config
+    ],
+    // You must ensure that the compilerOptions for your Node.js/API logic 
+    // are defined directly in this file OR in a config file that this one extends.
+    "compilerOptions": {
+        // These options are necessary for the API logic
+        "target": "ES2020",
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        // ... all your other Node.js compiler options ...
+    }
 }
