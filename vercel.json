@@ -1,5 +1,4 @@
 {
-  "outputDirectory": "web/dist",
   "rewrites": [
     {
       "source": "/mcp/(.*)",
@@ -7,7 +6,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/web/dist/index.html"
     }
   ],
   "functions": {
