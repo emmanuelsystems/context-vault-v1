@@ -1,13 +1,34 @@
+// vercel.json (Final Structure)
 {
   "rewrites": [
+    // 1. Route all requests starting with /mcp (including /mcp/) to the serverless function.
     {
-      "source": "/mcp",
+      "source": "/mcp/(.*)",
       "destination": "/api/mcp.ts"
+    },
+    // 2. All other requests should fall back to the Workbench UI (index.html),
+    // allowing the Vite static files (JS, CSS) to be served.
+    {
+      "source": "/(.*)",
+      "destination": "/dist/index.html"
     }
   ],
   "functions": {
+    // Defines your serverless function location and settings
     "api/mcp.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      // Ensure the included files path is correct if your code is not flat
+      "includeFiles": "src/**"
     }
-  }
+  },
+  "builds": [
+    // Define the build process for your static files (Workbench UI)
+    {
+      "src": "web/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist" // Output directory of your Vite build
+      }
+    }
+  ]
 }
