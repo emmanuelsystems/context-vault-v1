@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 
@@ -38,6 +38,9 @@ model Play {
 
   runs   Run[]
   assets Asset[]
+
+  workspaceId String?
+  coreBlocks  CoreBlock[]
 }
 
 /**
@@ -52,6 +55,8 @@ model CoreBlock {
 
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  plays     Play[]
 }
 
 /**
