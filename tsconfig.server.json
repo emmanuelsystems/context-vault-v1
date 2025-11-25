@@ -1,0 +1,18 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        // keep your ESM settings here or in base
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext"
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx" // only if server has tsx, otherwise remove
+    ],
+    "exclude": [
+        "web",
+        "web/**",
+        "node_modules"
+    ]
+}

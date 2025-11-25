@@ -6,5 +6,10 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "skipLibCheck": true
-    }
+    },
+    "exclude": [
+        "web",
+        "web/**",
+        "node_modules"
+    ]
 }
