@@ -1,0 +1,28 @@
+.context-vault-widget {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+.context-vault-widget h1 {
+    font-size: 2em;
+    margin-bottom: 1rem;
+}
+
+.context-vault-widget .card {
+    padding: 2em;
+}
+
+.context-vault-widget code {
+    background-color: #1a1a1a;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+@media (prefers-color-scheme: light) {
+    .context-vault-widget code {
+        background-color: #f0f0f0;
+    }
+}
