@@ -1,8 +1,11 @@
-// tsconfig.json (Root) - FINAL CORRECTED PATHS
+// tsconfig.json (Root) - FINAL CORRECTED VERSION
 {
     "files": [],
     "references": [
-        // 2. Reference the frontend application config file inside web/
+        // Point to the specific config files within the sub-directories
+        {
+            "path": "./tsconfig.node.json"
+        },
         {
             "path": "./web/tsconfig.app.json"
         }
