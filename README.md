@@ -14,6 +14,8 @@ When adding this server to an MCP client application, use your deployment URL fo
 https://your-deployment-url.vercel.app/mcp
 ```
 
+> Workspace scoping: set `ALLOWED_WORKSPACE_ID` in your deployment environment to pin the connector to a single workspace. Incoming tool calls that specify a different workspace will be rejected.
+
 ## Example Tools
 
 The template includes two example tools to get you started:

@@ -1,7 +1,7 @@
 // index.ts
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import prisma from "./lib/prisma.js";
+import { getPrisma } from "./lib/prisma.js";
 import * as z from "zod";
 
 const server = new McpServer({
@@ -15,7 +15,7 @@ server.registerTool(
     {
         title: "Health Check",
         description: "Verify MCP server + database connection",
-        inputSchema: {},
+        inputSchema: z.object({}).strict(),
         outputSchema: {
             status: z.string(),
             message: z.string(),
@@ -23,7 +23,8 @@ server.registerTool(
     },
     async () => {
         try {
-            // Ping database — will throw if not connected
+            const prisma = getPrisma();
+            // Ping database - will throw if not connected
             await prisma.$queryRaw`SELECT 1`;
 
             const output = {
@@ -58,8 +59,8 @@ server.registerTool(
         title: "List Available Plays",
         description: "Retrieves all Plays (workflows) accessible by the current workspace.",
         inputSchema: z.object({
-            workspace_id: z.string().describe("The unique ID of the client workspace (used for scoping)."),
-        }),
+            workspace_id: z.string().optional().describe("Optional workspace ID; if ALLOWED_WORKSPACE_ID is set, this must match."),
+        }).strict(),
         outputSchema: z.array(
             z.object({
                 id: z.string().describe("The Play's unique ID."),
@@ -70,10 +71,32 @@ server.registerTool(
     },
     async ({ workspace_id }) => {
         try {
-            // CRITICAL: Database Query wrapped in try/catch to prevent 424 TaskGroup error
+            const prisma = getPrisma();
+
+            // Resolve workspace from env or input; env wins if provided
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+            const resolvedWorkspaceId = allowedWorkspaceId ?? workspace_id;
+
+            if (!resolvedWorkspaceId) {
+                const message = "Workspace ID not provided and ALLOWED_WORKSPACE_ID is not set.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { status: "error", message },
+                };
+            }
+
+            if (allowedWorkspaceId && workspace_id && workspace_id !== allowedWorkspaceId) {
+                const message = "Workspace ID mismatch: request not allowed for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { status: "error", message },
+                };
+            }
+
+            // Scoped query to the resolved workspace
             const plays = await prisma.play.findMany({
                 where: {
-                    workspaceId: workspace_id, // We know this ID is client_123_syndicate
+                    workspaceId: resolvedWorkspaceId,
                 },
                 select: {
                     id: true,
@@ -84,7 +107,7 @@ server.registerTool(
 
             // Return success with retrieved data
             return {
-                content: [{ type: "text", text: `Found ${plays.length} Plays for workspace ${workspace_id}.` }],
+                content: [{ type: "text", text: `Found ${plays.length} Plays for workspace ${resolvedWorkspaceId}.` }],
                 structuredContent: plays,
             };
 

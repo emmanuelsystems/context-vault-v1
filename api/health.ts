@@ -1,7 +1,8 @@
-import prisma from "../src/lib/prisma.js";
+import { getPrisma } from "../src/lib/prisma.js";
 
 export default async function handler(req: any, res: any) {
     try {
+        const prisma = getPrisma();
         // Ping the database
         await prisma.$queryRaw`SELECT 1`;
 
