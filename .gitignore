@@ -10,3 +10,5 @@ node_modules
 *.map
 !prisma.config.js
 dist
+
+.vercel
