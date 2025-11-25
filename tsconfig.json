@@ -1,11 +1,12 @@
-// tsconfig.json (Root) - FINAL CORRECTED VERSION
+// tsconfig.json (Root) - FINAL CORRECTED PATHS
 {
     "files": [],
     "references": [
-        // Point to the specific config files within the sub-directories
+        // 1. Reference the backend configuration file now located at the root
         {
-            "path": "./server/tsconfig.json"
+            "path": "./tsconfig.json"
         },
+        // 2. Reference the web configuration file (this path remains correct)
         {
             "path": "./web/tsconfig.json"
         }
