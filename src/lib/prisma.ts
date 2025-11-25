@@ -2,30 +2,36 @@
 
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
-import { PrismaClient } from "@prisma/client";
 
 // WebSocket config for Node/serverless
 if (typeof window === "undefined") {
-    // dynamic require to avoid bundling issues
     neonConfig.webSocketConstructor = require("ws");
 }
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+declare global {
+    // eslint-disable-next-line no-var
+    var prisma: any;
+}
+
+const globalForPrisma = globalThis as unknown as { prisma?: any };
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is required");
 }
 
-// ✅ No Pool needed
+// ✅ Adapter without Pool
 const adapter = new PrismaNeon({ connectionString });
+
+// ✅ Dynamic require avoids TS2305 in Vercel builds
+const PrismaClientClass = require("@prisma/client").PrismaClient;
 
 export const prisma =
     globalForPrisma.prisma ??
-    new PrismaClient({
+    new PrismaClientClass({
         adapter,
         log: ["error", "warn"],
-    });
+    } as any);
 
 if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = prisma;
