@@ -1,12 +1,13 @@
-// tsconfig.json (In the root directory)
+// tsconfig.json (Root) - FINAL CORRECTED VERSION
 {
     "files": [],
     "references": [
+        // Point to the specific config files within the sub-directories
         {
-            "path": "./server"
+            "path": "./server/tsconfig.json"
         },
         {
-            "path": "./web"
+            "path": "./web/tsconfig.json"
         }
     ]
 }
