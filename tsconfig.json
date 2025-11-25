@@ -1,14 +1,10 @@
-// tsconfig.json (Root) - FINAL CORRECTED VERSION
 {
-    "files": [],
-    "references": [
-        // 1. Reference the new dedicated backend config file
-        {
-            "path": "./tsconfig.build.json"
-        },
-        // 2. Reference the frontend application config file
-        {
-            "path": "./web/tsconfig.app.json"
-        }
-    ]
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    }
 }

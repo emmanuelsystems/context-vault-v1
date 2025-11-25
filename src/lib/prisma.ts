@@ -2,6 +2,10 @@
 
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
+import { createRequire } from "module";
+
+// ✅ ESM-safe require
+const require = createRequire(import.meta.url);
 
 // WebSocket config for Node/serverless
 if (typeof window === "undefined") {
@@ -23,7 +27,7 @@ if (!connectionString) {
 // ✅ Adapter without Pool
 const adapter = new PrismaNeon({ connectionString });
 
-// ✅ Dynamic require avoids TS2305 in Vercel builds
+// ✅ ESM-safe dynamic load of PrismaClient
 const PrismaClientClass = require("@prisma/client").PrismaClient;
 
 export const prisma =
