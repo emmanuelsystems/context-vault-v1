@@ -2,10 +2,6 @@
 {
     "files": [],
     "references": [
-        // 1. Reference the backend configuration file at the root
-        {
-            "path": "./tsconfig.build.json"
-        },
         // 2. Reference the frontend application config file inside web/
         {
             "path": "./web/tsconfig.app.json"
