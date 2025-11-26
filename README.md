@@ -1,45 +1,83 @@
-# Run an MCP Server on Vercel
+# Context Vault MCP Connector
 
-## Usage
+Live MCP endpoint: `https://context-vault-v1.vercel.app/mcp`
 
-Update `api/server.ts` with your tools, prompts, and resources following the [MCP TypeScript SDK documentation](https://github.com/modelcontextprotocol/typescript-sdk/tree/main?tab=readme-ov-file#server).
+This repo provides an MCP server (Vercel serverless) with tools for health, play listing, run creation, ASSET assembly, status updates, and asset banking, plus a Workbench UI (Vite/React) deployed at the root.
 
-[There is also a Next.js version of this template](https://vercel.com/templates/next.js/model-context-protocol-mcp-with-next-js)
+## Prerequisites
+- Node 18+ (Node 22 OK; avoid experimental ESM flags by using provided scripts)
+- pnpm or npm (repo uses pnpm-lock; npm works via scripts)
+- A Neon Postgres database (connection string)
+- Vercel account (to deploy serverless + static UI)
 
-## MCP Client Integration
-
-When adding this server to an MCP client application, use your deployment URL followed by `/mcp`:
-
+## Environment variables
+Create `.env` in repo root (do not commit):
 ```
-https://your-deployment-url.vercel.app/mcp
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB?sslmode=require
+ALLOWED_WORKSPACE_ID=client_123_syndicate
 ```
 
-> Workspace scoping: set `ALLOWED_WORKSPACE_ID` in your deployment environment to pin the connector to a single workspace. Incoming tool calls that specify a different workspace will be rejected.
-
-## Example Tools
-
-The template includes two example tools to get you started:
-
-- **`roll_dice`** - Rolls an N-sided die (minimum 2 sides)
-- **`get_weather`** - Gets current weather data (via an API) for a location using latitude, longitude, and city name
-
-These tools demonstrate basic functionality and API integration patterns. Replace them with your own tools.
-
-## Notes for running on Vercel
-
-- Make sure you have [Fluid compute](https://vercel.com/docs/functions/fluid-compute) enabled for efficient execution
-- After enabling Fluid compute, open `vercel.json` and adjust max duration to 800 if you using a Vercel Pro or Enterprise account
-- [Deploy the MCP template](https://vercel.com/templates/other/model-context-protocol-mcp-with-vercel-functions)
-
-## Local dev
-
-- Run `vercel dev` for local development
-- Alternatively, integrate the system into the server framework of your choice.
-
-## Sample Client
-
-`script/test-client.mjs` contains a sample client to try invocations.
-
+## Installation
 ```sh
-node scripts/test-client.mjs https://mcp-on-vercel.vercel.app
+npm install
+npx prisma generate
 ```
+
+## Seeding the Workbook Play
+Runs the “Workbook Module Drafting (v1)” play and core blocks into your DB:
+```sh
+node prisma/seed-workbook-module.cjs
+```
+
+## Run locally
+Serverless-style dev:
+```sh
+npx vercel dev
+```
+or just run the MCP server entry for API routes via your runner. The static UI builds to `web/dist`.
+
+## Build
+```sh
+npm run build
+```
+This generates Prisma client, compiles server TS, and builds the web UI to `web/dist`.
+
+## Deploy to Vercel
+- Ensure Vercel project is linked to this repo/branch and auto-deploy is on.
+- Set env vars in Vercel: `DATABASE_URL`, `ALLOWED_WORKSPACE_ID`.
+- `vercel.json` rewrites `/mcp` → `/api/mcp.ts` and serves `web/dist` at root; additional API routes are under `/api/*`.
+
+## MCP tools exposed
+- `cv_health_check` – DB + server ping
+- `cv_list_plays` – lists plays for workspace
+- `cv_create_run` – creates a run (task_goal + play)
+- `cv_update_run_status` – update run status (PENDING/IN_PROGRESS/PASS/FAIL)
+- `cv_assemble_asset` – builds ASSET prompt from run context (play/core blocks/shape)
+- `cv_bank_asset` – stores asset linked to a run
+
+MCP URL for clients: `https://context-vault-v1.vercel.app/mcp`
+
+## Workbench UI (browser)
+Deployed at root. Phased flow:
+1) Start Run: select play (radios), enter task goal, view context preview, Start Run.
+2) Job Execution: shows run ID, status control, assemble ASSET.
+3) Finalize & Bank: approve output, set PASS, bank asset.
+
+Fallbacks: UI uses REST endpoints when MCP host runtime isn’t injected.
+
+## REST endpoints (for UI fallback)
+- `GET /api/plays?workspace_id=...`
+- `GET /api/play-details?play_id=...`
+- `POST /api/runs` (create run)
+- `POST /api/run-status` (update run status)
+- `POST /api/assemble-asset`
+- `POST /api/bank-asset`
+- `GET /api/health`
+
+## ChatGPT MCP connector
+Use MCP URL `https://context-vault-v1.vercel.app/mcp` in Apps & Connectors. No auth currently.
+
+## Notes
+- Workspace scoping enforced via `ALLOWED_WORKSPACE_ID`.
+- Neon adapter is used for Prisma; ensure `DATABASE_URL` is set before running scripts.
+- If Prisma client missing, run `npx prisma generate`.
