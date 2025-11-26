@@ -1,6 +1,7 @@
 // web/src/WorkbenchWidget.tsx
 
 import React, { useState, useEffect } from 'react';
+import './WorkbenchWidget.css';
 
 // Define the type for the data retrieved from the database
 interface Play {
@@ -129,57 +130,98 @@ const WorkbenchWidget: React.FC = () => {
         }
     };
 
-    if (loading) return <div>Loading Context Vault Plays...</div>;
-    if (error) return <div style={{ color: 'red', padding: '10px', border: '1px solid red' }}>Error: {error}</div>;
+    if (loading) return <div className="cv-shell">Loading Context Vault Plays...</div>;
+    if (error) {
+        return (
+            <div className="cv-shell">
+                <div className="cv-banner cv-banner--error">{error}</div>
+            </div>
+        );
+    }
 
     return (
-        <div>
-            <h2>Context Vault Plays ({plays.length})</h2>
-            <p>Data retrieved successfully from Neon DB via MCP Server.</p>
-            <div style={{ margin: '12px 0', padding: '12px', border: '1px solid #ddd' }}>
-                <div style={{ marginBottom: '8px' }}>
-                    <label>
-                        Task Goal:&nbsp;
+        <div className="cv-shell">
+            <header className="cv-header">
+                <div>
+                    <p className="cv-kicker">Context Vault Workbench</p>
+                    <h1>
+                        Select a Play &amp; Start a Run
+                        <span className="cv-pill">Live</span>
+                    </h1>
+                    <p className="cv-subtitle">
+                        Data pulled directly from Neon via MCP. Workspace: <span className="cv-mono">{workspaceId}</span>
+                    </p>
+                </div>
+                <div className="cv-metrics">
+                    <div className="cv-metric">
+                        <span>Plays</span>
+                        <strong>{plays.length}</strong>
+                    </div>
+                    <div className="cv-metric">
+                        <span>Run status</span>
+                        <strong>{runResult ? runResult.status : '–'}</strong>
+                    </div>
+                </div>
+            </header>
+
+            <div className="cv-grid">
+                <section className="cv-card">
+                    <div className="cv-card__header">
+                        <div>
+                            <p className="cv-kicker">Run setup</p>
+                            <h2>Task goal &amp; context</h2>
+                        </div>
+                    </div>
+                    <div className="cv-field">
+                        <label htmlFor="task-goal">Task goal</label>
                         <input
+                            id="task-goal"
                             type="text"
                             value={taskGoal}
                             onChange={(e) => setTaskGoal(e.target.value)}
-                            style={{ width: '360px' }}
                             placeholder="e.g., Draft Module 2 for Scott's Workbook"
                         />
-                    </label>
-                </div>
-                <div>
-                    <label>
-                        Config JSON (optional):
-                        <br />
+                    </div>
+                    <div className="cv-field">
+                        <label htmlFor="config-json">Config JSON (optional)</label>
                         <textarea
+                            id="config-json"
                             value={configJsonText}
                             onChange={(e) => setConfigJsonText(e.target.value)}
                             placeholder='{"dab_role":"Research Synthesizer","core_blocks":["id1","id2"]}'
-                            style={{ width: '360px', height: '100px' }}
                         />
-                    </label>
-                </div>
+                    </div>
+                    {runResult && (
+                        <div className="cv-banner cv-banner--success">
+                            Run created: {runResult.run_id} (status: {runResult.status})
+                        </div>
+                    )}
+                </section>
+
+                <section className="cv-card">
+                    <div className="cv-card__header">
+                        <div>
+                            <p className="cv-kicker">Available Plays</p>
+                            <h2>Pick a workflow to run</h2>
+                        </div>
+                    </div>
+                    <div className="cv-play-list">
+                        {plays.map((play) => (
+                            <div className="cv-play" key={play.id || play.name}>
+                                <div>
+                                    <p className="cv-mono cv-id">ID: {play.id}</p>
+                                    <h3>{play.name}</h3>
+                                    {play.description && <p className="cv-description">{play.description}</p>}
+                                </div>
+                                <button className="cv-button" onClick={() => startRun(play.id)}>
+                                    Start Run
+                                </button>
+                            </div>
+                        ))}
+                        {plays.length === 0 && <p className="cv-muted">No plays available for this workspace.</p>}
+                    </div>
+                </section>
             </div>
-            <ul>
-                {plays.map(play => (
-                    <li key={play.id || play.name} style={{ marginBottom: '8px' }}>
-                        [ID: {play.id}] <strong>{play.name}</strong>
-                        <button
-                            style={{ marginLeft: '8px' }}
-                            onClick={() => startRun(play.id)}
-                        >
-                            Start Run
-                        </button>
-                    </li>
-                ))}
-            </ul>
-            {runResult && (
-                <div style={{ marginTop: '12px', padding: '8px', border: '1px solid green', color: 'green' }}>
-                    Run created: {runResult.run_id} (status: {runResult.status})
-                </div>
-            )}
         </div>
     );
 };
