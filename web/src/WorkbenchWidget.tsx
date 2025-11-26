@@ -131,7 +131,10 @@ const WorkbenchWidget: React.FC = () => {
     };
 
     if (loading) return <div className="cv-shell">Loading Context Vault Plays...</div>;
-    const goBack = () => window.history.length > 1 ? window.history.back() : window.location.assign('/');
+    const goBack = () => {
+        // Always land on the Workbench root
+        window.location.assign('/');
+    };
 
     if (error) {
         return (
