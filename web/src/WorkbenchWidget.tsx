@@ -40,6 +40,9 @@ const WorkbenchWidget: React.FC = () => {
     const [assetTitle, setAssetTitle] = useState<string>('');
     const [assetContent, setAssetContent] = useState<string>('');
     const [assetStatus, setAssetStatus] = useState<{ asset_id: string; status: string } | null>(null);
+    const [selectedPlayId, setSelectedPlayId] = useState<string>('');
+    const [playDetails, setPlayDetails] = useState<{ coreBlocks: { id: string; title: string; kind: string }[]; dabRole?: string } | null>(null);
+    const [detailsLoading, setDetailsLoading] = useState<boolean>(false);
 
     // NOTE: Use a valid Workspace ID that matches the one you used in your seed.ts file
     const workspaceId = 'client_123_syndicate';
@@ -66,7 +69,11 @@ const WorkbenchWidget: React.FC = () => {
                     result = await fetchPlaysViaRest();
                 }
 
-                setPlays(result.plays || result);
+                const playsResult = result.plays || result;
+                setPlays(playsResult);
+                if (playsResult.length > 0 && !selectedPlayId) {
+                    handleSelectPlay(playsResult[0].id);
+                }
             } catch (err: any) {
                 console.error("Play retrieval failed:", err);
                 setError(`Play retrieval failed: ${err.message || "Check Vercel logs."}`);
@@ -76,7 +83,34 @@ const WorkbenchWidget: React.FC = () => {
         };
 
         fetchPlays();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const fetchPlayDetails = async (playId: string) => {
+        setDetailsLoading(true);
+        try {
+            const resp = await fetch(`/api/play-details?play_id=${encodeURIComponent(playId)}`);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body?.message || `HTTP ${resp.status}`);
+            }
+            const data = await resp.json();
+            setPlayDetails({
+                coreBlocks: data.core_blocks || [],
+                dabRole: data.dab_role,
+            });
+        } catch (err: any) {
+            console.error("Play details fetch failed:", err);
+            setPlayDetails(null);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
+    const handleSelectPlay = (playId: string) => {
+        setSelectedPlayId(playId);
+        fetchPlayDetails(playId);
+    };
 
     const startRun = async (playId: string) => {
         setError(null);
@@ -133,6 +167,8 @@ const WorkbenchWidget: React.FC = () => {
             setRunResult({ run_id, status });
             setRunIdForActions(run_id);
             setNewStatus('IN_PROGRESS');
+            // Sync selection to the play used for the run
+            setSelectedPlayId(playId);
         } catch (err: any) {
             console.error("Run creation failed:", err);
             setError(`Run creation failed: ${err.message || "Check Vercel logs."}`);
@@ -287,7 +323,7 @@ const WorkbenchWidget: React.FC = () => {
                     </div>
                     <div className="cv-metric">
                         <span>Run status</span>
-                        <strong>{runResult ? runResult.status : '–'}</strong>
+                        <strong>{runResult ? `${runResult.status} (${runResult.run_id})` : '–'}</strong>
                     </div>
                 </div>
             </header>
@@ -335,7 +371,11 @@ const WorkbenchWidget: React.FC = () => {
                     </div>
                     <div className="cv-play-list">
                         {plays.map((play) => (
-                            <div className="cv-play" key={play.id || play.name}>
+                            <div
+                                className={`cv-play ${selectedPlayId === play.id ? 'selected' : ''}`}
+                                key={play.id || play.name}
+                                onClick={() => handleSelectPlay(play.id)}
+                            >
                                 <div>
                                     <p className="cv-mono cv-id">ID: {play.id}</p>
                                     <h3>{play.name}</h3>
@@ -352,6 +392,36 @@ const WorkbenchWidget: React.FC = () => {
             </div>
 
             <div className="cv-grid cv-grid--stretch">
+                <section className="cv-card">
+                    <div className="cv-card__header">
+                        <div>
+                            <p className="cv-kicker">Context preview</p>
+                            <h2>Core Blocks &amp; DAB</h2>
+                        </div>
+                    </div>
+                    {detailsLoading && <p className="cv-muted">Loading play context…</p>}
+                    {!detailsLoading && playDetails && (
+                        <>
+                            <p className="cv-mono cv-id">Play ID: {selectedPlayId || '—'}</p>
+                            <p className="cv-description">
+                                DAB Role: <strong>{playDetails.dabRole || "Workbook Architect"}</strong>
+                            </p>
+                            <div className="cv-coreblocks">
+                                <p className="cv-kicker">Core Blocks</p>
+                                {playDetails.coreBlocks.length === 0 && <p className="cv-muted">No core blocks found.</p>}
+                                <ul>
+                                    {playDetails.coreBlocks.map((cb) => (
+                                        <li key={cb.id}>
+                                            <span className="cv-chip">{cb.kind}</span> {cb.title}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </>
+                    )}
+                    {!detailsLoading && !playDetails && <p className="cv-muted">Select a play to view context.</p>}
+                </section>
+
                 <section className="cv-card">
                     <div className="cv-card__header">
                         <div>
