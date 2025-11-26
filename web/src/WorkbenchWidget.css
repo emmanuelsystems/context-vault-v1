@@ -88,6 +88,10 @@
     gap: 20px;
 }
 
+.cv-grid--stretch .cv-card {
+    height: 100%;
+}
+
 .cv-card {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -113,7 +117,8 @@
 }
 
 .cv-field input,
-.cv-field textarea {
+.cv-field textarea,
+.cv-field select {
     width: 100%;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -126,6 +131,12 @@
 .cv-field textarea {
     min-height: 110px;
     resize: vertical;
+}
+
+.cv-actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .cv-play-list {
@@ -174,6 +185,12 @@
     cursor: pointer;
     box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cv-button.ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: none;
 }
 
 .cv-button:hover {
