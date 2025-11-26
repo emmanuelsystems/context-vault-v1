@@ -27,26 +27,32 @@ const WorkbenchWidget: React.FC = () => {
     // NOTE: Use a valid Workspace ID that matches the one you used in your seed.ts file
     const workspaceId = 'client_123_syndicate';
 
+    const fetchPlaysViaRest = async () => {
+        const resp = await fetch(`/api/plays?workspace_id=${encodeURIComponent(workspaceId)}`);
+        if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            throw new Error(body?.message || `HTTP ${resp.status}`);
+        }
+        return resp.json();
+    };
+
     useEffect(() => {
         const fetchPlays = async () => {
-            // Check if the AI host runtime and tool are available
-            if (!window.openai || !window.openai.connector?.cv_list_plays) {
-                setError("MCP runtime or 'cv_list_plays' tool not available. Connector may not be fully active.");
-                setLoading(false);
-                return;
-            }
-
             try {
-                // Call the deployed MCP tool on the server
-                const result = await window.openai.connector.cv_list_plays({
-                    workspace_id: workspaceId
-                });
+                let result: any;
 
-                // Assuming the server returns the plays array directly or nested within a 'plays' property
+                // Prefer MCP host runtime if available
+                if (window.openai && window.openai.connector?.cv_list_plays) {
+                    result = await window.openai.connector.cv_list_plays({ workspace_id: workspaceId });
+                } else {
+                    // Fallback to REST API for browser/demo use
+                    result = await fetchPlaysViaRest();
+                }
+
                 setPlays(result.plays || result);
             } catch (err: any) {
-                console.error("MCP Tool Call Failed:", err);
-                setError(`Tool Execution Error: ${err.message || "Check Vercel logs."}`);
+                console.error("Play retrieval failed:", err);
+                setError(`Play retrieval failed: ${err.message || "Check Vercel logs."}`);
             } finally {
                 setLoading(false);
             }
