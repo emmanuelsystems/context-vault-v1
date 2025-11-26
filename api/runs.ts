@@ -1,4 +1,3 @@
-import { RunStatus } from "@prisma/client";
 import { getPrisma } from "../src/lib/prisma.js";
 
 export default async function handler(req: any, res: any) {
@@ -54,7 +53,7 @@ export default async function handler(req: any, res: any) {
         const run = await prisma.run.create({
             data: {
                 playId: play_id,
-                status: RunStatus.PENDING,
+                status: "PENDING",
                 configJson: JSON.stringify(configPayload),
             },
             select: { id: true, status: true },

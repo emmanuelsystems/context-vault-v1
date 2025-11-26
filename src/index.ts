@@ -1,7 +1,6 @@
 // index.ts
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { RunStatus } from "@prisma/client";
 import { getPrisma } from "./lib/prisma.js";
 import * as z from "zod";
 
@@ -198,7 +197,7 @@ server.registerTool(
             const run = await prisma.run.create({
                 data: {
                     playId: play_id,
-                    status: RunStatus.PENDING,
+                    status: "PENDING",
                     configJson: JSON.stringify(configPayload),
                 },
                 select: {
