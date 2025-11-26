@@ -1,6 +1,7 @@
 // index.ts
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { RunStatus } from "@prisma/client";
 import { getPrisma } from "./lib/prisma.js";
 import * as z from "zod";
 
@@ -128,6 +129,95 @@ server.registerTool(
             return {
                 content: [{ type: "text", text: output.message }],
                 structuredContent: output,
+            };
+        }
+    }
+);
+
+// --- Run Creation Tool (cv_create_run) ---
+const runOutputSchema = z.object({
+    run_id: z.string().describe("The Run's unique ID."),
+    status: z.string().describe("Lifecycle status of the run."),
+});
+
+server.registerTool(
+    "cv_create_run",
+    {
+        title: "Create Run",
+        description: "Creates a Run record for a Play with the provided task goal and context snapshot.",
+        inputSchema: z.object({
+            play_id: z.string().describe("The Play ID to execute."),
+            workspace_id: z.string().describe("Workspace ID for multi-tenant scoping."),
+            task_goal: z.string().describe("User goal for this run (drives ASSET prompt)."),
+            config_json: z.record(z.any()).optional().describe("Context snapshot (e.g., DAB role, Core Blocks, Shape ID)."),
+        }).strict(),
+        outputSchema: runOutputSchema,
+    },
+    async ({ play_id, workspace_id, task_goal, config_json }) => {
+        try {
+            const prisma = getPrisma();
+
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+            const resolvedWorkspaceId = allowedWorkspaceId ?? workspace_id;
+
+            if (!resolvedWorkspaceId) {
+                const message = "Workspace ID not provided and ALLOWED_WORKSPACE_ID is not set.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { run_id: "", status: "error" },
+                };
+            }
+
+            if (allowedWorkspaceId && workspace_id && workspace_id !== allowedWorkspaceId) {
+                const message = "Workspace ID mismatch: request not allowed for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { run_id: "", status: "error" },
+                };
+            }
+
+            // Ensure Play exists in workspace
+            const play = await prisma.play.findFirst({
+                where: { id: play_id, workspaceId: resolvedWorkspaceId },
+                select: { id: true },
+            });
+
+            if (!play) {
+                const message = "Play not found for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { run_id: "", status: "error" },
+                };
+            }
+
+            const configPayload = {
+                task_goal,
+                ...(config_json ?? {}),
+            };
+
+            const run = await prisma.run.create({
+                data: {
+                    playId: play_id,
+                    status: RunStatus.PENDING,
+                    configJson: JSON.stringify(configPayload),
+                },
+                select: {
+                    id: true,
+                    status: true,
+                },
+            });
+
+            const output = { run_id: run.id, status: run.status };
+            return {
+                content: [{ type: "text", text: `Run created: ${run.id} (status: ${run.status})` }],
+                structuredContent: output,
+            };
+        } catch (error: any) {
+            console.error("Run creation failed in cv_create_run:", error);
+            const message = error?.message || "Unknown error creating run.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: { run_id: "", status: "error" },
             };
         }
     }
