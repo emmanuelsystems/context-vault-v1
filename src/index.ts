@@ -326,14 +326,14 @@ server.registerTool(
         description: "Updates the lifecycle status of a Run.",
         inputSchema: z.object({
             run_id: z.string().describe("The Run ID to update."),
-            status: runStatusEnum.describe("New status for the Run."),
+            new_status: runStatusEnum.describe("New status for the Run."),
         }).strict(),
         outputSchema: z.object({
             run_id: z.string(),
             status: runStatusEnum,
         }),
     },
-    async ({ run_id, status }) => {
+    async ({ run_id, new_status }) => {
         try {
             const prisma = getPrisma();
             const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
@@ -357,7 +357,7 @@ server.registerTool(
 
             const updated = await prisma.run.update({
                 where: { id: run_id },
-                data: { status },
+                data: { status: new_status },
                 select: { id: true, status: true },
             });
 
@@ -371,6 +371,88 @@ server.registerTool(
             return {
                 content: [{ type: "text", text: message }],
                 structuredContent: { run_id: run_id, status: "PENDING" },
+            };
+        }
+    }
+);
+
+// --- Asset Banking Tool (cv_bank_asset) ---
+server.registerTool(
+    "cv_bank_asset",
+    {
+        title: "Bank Asset",
+        description: "Creates a quote-locked Asset record from a Run's verified output.",
+        inputSchema: z.object({
+            run_id: z.string().describe("Run ID to bank output from."),
+            asset_title: z.string().describe("Title for the asset."),
+            output_content: z.string().describe("Final content to store as the asset body."),
+        }).strict(),
+        outputSchema: z.object({
+            asset_id: z.string(),
+            run_id: z.string(),
+            status: z.string(),
+        }),
+    },
+    async ({ run_id, asset_title, output_content }) => {
+        try {
+            const prisma = getPrisma();
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+
+            const run = await prisma.run.findFirst({
+                where: {
+                    id: run_id,
+                    ...(allowedWorkspaceId ? { play: { workspaceId: allowedWorkspaceId } } : {}),
+                },
+                include: {
+                    play: true,
+                    shape: true,
+                },
+            });
+
+            if (!run) {
+                const message = "Run not found or not authorized for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { asset_id: "", run_id, status: "error" },
+                };
+            }
+
+            // Enforce one asset per run
+            const existing = await prisma.asset.findFirst({ where: { runId: run_id } });
+            if (existing) {
+                const message = "Asset already exists for this run.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { asset_id: existing.id, run_id, status: "exists" },
+                };
+            }
+
+            // Create asset linked to run, and optionally play/shape
+            const asset = await prisma.asset.create({
+                data: {
+                    runId: run_id,
+                    playId: run.playId ?? undefined,
+                    shapeId: run.shapeId ?? undefined,
+                    title: asset_title,
+                    content: output_content,
+                    excerpt: output_content.slice(0, 240),
+                },
+                select: {
+                    id: true,
+                    runId: true,
+                },
+            });
+
+            return {
+                content: [{ type: "text", text: `Asset banked: ${asset.id}` }],
+                structuredContent: { asset_id: asset.id, run_id: asset.runId, status: "ok" },
+            };
+        } catch (error: any) {
+            console.error("Asset banking failed:", error);
+            const message = error?.message || "Unknown error creating asset.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: { asset_id: "", run_id, status: "error" },
             };
         }
     }
