@@ -39,6 +39,7 @@ const WorkbenchWidget: React.FC = () => {
     const [assembledPrompt, setAssembledPrompt] = useState<string>('');
     const [assetTitle, setAssetTitle] = useState<string>('');
     const [assetContent, setAssetContent] = useState<string>('');
+    const [assetStatus, setAssetStatus] = useState<{ asset_id: string; status: string } | null>(null);
 
     // NOTE: Use a valid Workspace ID that matches the one you used in your seed.ts file
     const workspaceId = 'client_123_syndicate';
@@ -141,6 +142,7 @@ const WorkbenchWidget: React.FC = () => {
     const updateRunStatus = async () => {
         setError(null);
         setRunResult(null);
+        setAssetStatus(null);
         if (!runIdForActions.trim()) {
             setError("Provide a run ID to update.");
             return;
@@ -174,6 +176,7 @@ const WorkbenchWidget: React.FC = () => {
     const assembleAsset = async () => {
         setError(null);
         setAssembledPrompt('');
+        setAssetStatus(null);
         if (!runIdForActions.trim()) {
             setError("Provide a run ID to assemble the ASSET prompt.");
             return;
@@ -208,6 +211,7 @@ const WorkbenchWidget: React.FC = () => {
 
     const bankAsset = async () => {
         setError(null);
+        setAssetStatus(null);
         if (!runIdForActions.trim()) {
             setError("Provide a run ID to bank an asset.");
             return;
@@ -236,6 +240,7 @@ const WorkbenchWidget: React.FC = () => {
             const rid = result.run_id || runIdForActions;
             const status = result.status || 'ok';
             setRunResult({ run_id: rid, status });
+            setAssetStatus({ asset_id: result.asset_id || '', status });
         } catch (err: any) {
             console.error("Asset banking failed:", err);
             setError(`Asset banking failed: ${err.message || "Check Vercel logs."}`);
@@ -428,6 +433,11 @@ const WorkbenchWidget: React.FC = () => {
                             Bank Asset
                         </button>
                     </div>
+                    {assetStatus && (
+                        <div className="cv-banner cv-banner--success">
+                            Asset {assetStatus.status}: {assetStatus.asset_id || 'n/a'}
+                        </div>
+                    )}
                 </section>
             </div>
         </div>
