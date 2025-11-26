@@ -222,5 +222,159 @@ server.registerTool(
     }
 );
 
+// --- ASSET Assembly Tool (cv_assemble_asset) ---
+server.registerTool(
+    "cv_assemble_asset",
+    {
+        title: "Assemble ASSET Prompt",
+        description: "Builds the final ASSET prompt bundle from a Run: pulls Play Core Blocks, task goal, and Shape.",
+        inputSchema: z.object({
+            run_id: z.string().describe("The Run ID produced by cv_create_run."),
+        }).strict(),
+        outputSchema: z.object({
+            asset_prompt: z.string().describe("The fully assembled ASSET prompt text."),
+        }),
+    },
+    async ({ run_id }) => {
+        try {
+            const prisma = getPrisma();
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+
+            const run = await prisma.run.findFirst({
+                where: {
+                    id: run_id,
+                    ...(allowedWorkspaceId ? { play: { workspaceId: allowedWorkspaceId } } : {}),
+                },
+                include: {
+                    play: {
+                        include: {
+                            coreBlocks: true,
+                        },
+                    },
+                    shape: true,
+                },
+            });
+
+            if (!run) {
+                const message = "Run not found or not authorized for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { asset_prompt: "" },
+                };
+            }
+
+            const taskGoal = (() => {
+                try {
+                    const parsed = run.configJson ? JSON.parse(run.configJson) : {};
+                    return parsed.task_goal || parsed.taskGoal || "";
+                } catch {
+                    return "";
+                }
+            })();
+
+            const coreBlocks = run.play?.coreBlocks ?? [];
+            const shape = run.shape;
+
+            const sourcesSection =
+                coreBlocks.length === 0
+                    ? "No Core Blocks provided."
+                    : coreBlocks
+                          .map(
+                              (cb, idx) =>
+                                  `(${idx + 1}) [${cb.kind}] ${cb.title}\n${cb.content}`
+                          )
+                          .join("\n\n");
+
+            const structuredOutput =
+                shape?.schemaJson ||
+                (shape?.name ? `Use shape: ${shape.name}` : "Return well-structured JSON.");
+
+            const assistantSection = run.play
+                ? `You are the assistant executing Play "${run.play.name}".`
+                : "You are the assistant executing the requested Play.";
+
+            const assetPrompt = [
+                `ASSISTANT\n${assistantSection}`,
+                `SOURCES\n${sourcesSection}`,
+                `STRUCTURED OUTPUT\n${structuredOutput}`,
+                `EXPECTATIONS\n- Cite relevant sources by number when used.\n- Keep responses concise and actionable.\n- Follow the structured output exactly.`,
+                `TASK\n${taskGoal || "Perform the requested task with the provided context."}`,
+            ].join("\n\n");
+
+            return {
+                content: [{ type: "text", text: "ASSET prompt assembled." }],
+                structuredContent: { asset_prompt: assetPrompt },
+            };
+        } catch (error: any) {
+            console.error("ASSET assembly failed:", error);
+            const message = error?.message || "Unknown error assembling ASSET prompt.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: { asset_prompt: "" },
+            };
+        }
+    }
+);
+
+// --- Run Status Update Tool (cv_update_run_status) ---
+const runStatusEnum = z.enum(["PENDING", "IN_PROGRESS", "PASS", "FAIL"]);
+
+server.registerTool(
+    "cv_update_run_status",
+    {
+        title: "Update Run Status",
+        description: "Updates the lifecycle status of a Run.",
+        inputSchema: z.object({
+            run_id: z.string().describe("The Run ID to update."),
+            status: runStatusEnum.describe("New status for the Run."),
+        }).strict(),
+        outputSchema: z.object({
+            run_id: z.string(),
+            status: runStatusEnum,
+        }),
+    },
+    async ({ run_id, status }) => {
+        try {
+            const prisma = getPrisma();
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+
+            // Enforce workspace scoping by joining to Play
+            const run = await prisma.run.findFirst({
+                where: {
+                    id: run_id,
+                    ...(allowedWorkspaceId ? { play: { workspaceId: allowedWorkspaceId } } : {}),
+                },
+                select: { id: true },
+            });
+
+            if (!run) {
+                const message = "Run not found or not authorized for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { run_id: run_id, status: "PENDING" },
+                };
+            }
+
+            const updated = await prisma.run.update({
+                where: { id: run_id },
+                data: { status },
+                select: { id: true, status: true },
+            });
+
+            return {
+                content: [{ type: "text", text: `Run ${updated.id} status set to ${updated.status}` }],
+                structuredContent: { run_id: updated.id, status: updated.status },
+            };
+        } catch (error: any) {
+            console.error("Run status update failed:", error);
+            const message = error?.message || "Unknown error updating run status.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: { run_id: run_id, status: "PENDING" },
+            };
+        }
+    }
+);
+
 
 export { server };
