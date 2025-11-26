@@ -8,6 +8,23 @@
     font-family: "Poppins", "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
+.cv-nav {
+    margin-bottom: 12px;
+}
+
+.cv-link {
+    background: none;
+    border: none;
+    color: #8fb4ff;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.cv-link:hover {
+    text-decoration: underline;
+}
+
 .cv-header {
     display: flex;
     justify-content: space-between;

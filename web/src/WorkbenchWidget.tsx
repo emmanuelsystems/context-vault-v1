@@ -131,9 +131,14 @@ const WorkbenchWidget: React.FC = () => {
     };
 
     if (loading) return <div className="cv-shell">Loading Context Vault Plays...</div>;
+    const goBack = () => window.history.length > 1 ? window.history.back() : window.location.assign('/');
+
     if (error) {
         return (
             <div className="cv-shell">
+                <div className="cv-nav">
+                    <button className="cv-link" onClick={goBack}>← Back to Workbench</button>
+                </div>
                 <div className="cv-banner cv-banner--error">{error}</div>
             </div>
         );
@@ -141,6 +146,9 @@ const WorkbenchWidget: React.FC = () => {
 
     return (
         <div className="cv-shell">
+            <div className="cv-nav">
+                <button className="cv-link" onClick={goBack}>← Back to Workbench</button>
+            </div>
             <header className="cv-header">
                 <div>
                     <p className="cv-kicker">Context Vault Workbench</p>
