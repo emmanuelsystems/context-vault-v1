@@ -5,7 +5,7 @@
       "destination": "/api/mcp.ts"
     },
     {
-      "source": "/(?!api/)(.*)",
+      "source": "/(.*)",
       "destination": "/web/dist/index.html"
     }
   ],
