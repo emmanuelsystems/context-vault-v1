@@ -88,8 +88,8 @@
     gap: 20px;
 }
 
-.cv-grid--stretch .cv-card {
-    height: 100%;
+.cv-grid--stack {
+    grid-template-columns: 1fr;
 }
 
 .cv-card {
@@ -104,11 +104,26 @@
     margin: 4px 0 12px;
 }
 
+.cv-card__sub {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .cv-field {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-bottom: 16px;
+}
+
+.cv-field.inline .cv-inline-input {
+    display: flex;
+    gap: 10px;
+}
+
+.cv-inline-input input {
+    flex: 1;
 }
 
 .cv-field label {
@@ -137,6 +152,32 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+.cv-play-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cv-radio {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+}
+
+.cv-radio.selected {
+    border-color: rgba(99, 102, 241, 0.65);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35);
+}
+
+.cv-radio input {
+    margin: 0;
 }
 
 .cv-play-list {
@@ -197,8 +238,24 @@
     color: #cdd6ec;
 }
 
+.cv-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #eaf0ff;
+    font-family: "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+    word-break: break-all;
+}
+
 .cv-muted {
     color: #9fb0d3;
+}
+
+.cv-muted.small {
+    font-size: 12px;
 }
 
 .cv-button {
@@ -219,7 +276,12 @@
     box-shadow: none;
 }
 
-.cv-button:hover {
+.cv-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cv-button:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 12px 30px rgba(99, 102, 241, 0.35);
 }
@@ -258,5 +320,8 @@
     .cv-button {
         width: 100%;
         text-align: center;
+    }
+    .cv-field.inline .cv-inline-input {
+        flex-direction: column;
     }
 }
