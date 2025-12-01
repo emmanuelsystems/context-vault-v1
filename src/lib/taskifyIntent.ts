@@ -1,5 +1,5 @@
 // taskifyIntent.ts
-// Placeholder stub for creating tasks from intent action items.
+// Stub for creating tasks from intent action items. Replace with actual persistence.
 import type { ExtractedIntent } from "./intentTypes.js";
 
 type TaskRefs = {
@@ -10,10 +10,19 @@ type TaskRefs = {
 };
 
 export async function taskifyIntent(intent: ExtractedIntent, refs: TaskRefs) {
-    // TODO: implement actual task creation (e.g., in Notion/DB) using intent.actionItems.
-    // Attach owner/due if present, relate to note/client/project/play.
+    const tasks = intent.actionItems.map((item, idx) => ({
+        title: item.text,
+        owner: item.owner,
+        due: item.due,
+        refs: {
+            ...refs,
+        },
+        localId: `task-${idx + 1}`,
+    }));
+
+    // TODO: persist tasks to your DB/Notion and return created IDs.
     return {
-        taskCount: intent.actionItems.length,
-        refs,
+        taskCount: tasks.length,
+        tasks,
     };
 }
