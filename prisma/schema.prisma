@@ -116,6 +116,7 @@ model Run {
   updatedAt   DateTime   @updatedAt
 
   asset       Asset?
+  tasks       Task[]
 }
 
 /**
@@ -139,4 +140,33 @@ model Asset {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/**
+ * Note: structured intent summaries / TLDRs.
+ */
+model Note {
+  id             String   @id @default(uuid())
+  title          String
+  summaryContent String   // full structured payload
+  workspaceId    String   // required for multi-tenancy
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/**
+ * Task: action items derived from intent.
+ */
+model Task {
+  id          String   @id @default(uuid())
+  runId       String?
+  run         Run?     @relation(fields: [runId], references: [id])
+
+  title       String
+  description String?
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, DONE
+  workspaceId String
+
+  createdAt   DateTime @default(now())
 }

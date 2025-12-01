@@ -1,15 +1,19 @@
 // writeIntentNote.ts
 // Stub for writing a structured Intent note (e.g., to Notion/DB). Replace with actual persistence.
 import type { ExtractedIntent } from "./intentTypes.js";
+import { getPrisma } from "./prisma.js";
 
 type NoteRef = {
     clientRef?: string;
     projectRef?: string;
     playRef?: string;
     canonIds?: { whyId?: string | null; whatId?: string | null; constraintsId?: string | null };
+    workspaceId?: string;
 };
 
-export async function writeIntentNote(intent: ExtractedIntent, refs: NoteRef) {
+export async function writeIntentNote(intent: ExtractedIntent, refs: NoteRef, workspaceId?: string) {
+    const prisma = getPrisma();
+    const resolvedWorkspaceId = workspaceId ?? refs.workspaceId;
     const note = {
         title: intent.inferredTitle || "Intent",
         tldr: intent.what || intent.why || "",
@@ -27,9 +31,17 @@ export async function writeIntentNote(intent: ExtractedIntent, refs: NoteRef) {
         },
     };
 
-    // TODO: implement actual note creation in Notion/DB and return the created ID.
+    const created = await prisma.note.create({
+        data: {
+            title: note.title,
+            summaryContent: JSON.stringify(note),
+            workspaceId: resolvedWorkspaceId || "unknown_workspace",
+        },
+        select: { id: true },
+    });
+
     return {
-        noteId: "TODO",
+        noteId: created.id,
         note,
     };
 }
