@@ -4,6 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getPrisma } from "./lib/prisma.js";
 import { extractIntent } from "./lib/intentExtractor.js";
 import { bankCanonBlocks } from "./lib/bankCanonBlocks.js";
+import { writeIntentNote } from "./lib/writeIntentNote.js";
+import { taskifyIntent } from "./lib/taskifyIntent.js";
 import * as z from "zod";
 
 const server = new McpServer({
@@ -514,6 +516,111 @@ server.registerTool(
             return {
                 content: [{ type: "text", text: message }],
                 structuredContent: { status: "error", intent: null, banked: null },
+            };
+        }
+    }
+);
+
+// --- Intent Approval Tool (cv_approve_intent) ---
+server.registerTool(
+    "cv_approve_intent",
+    {
+        title: "Approve Intent",
+        description: "Approves intent (Why/What/Constraints), banks canon, writes intent note, and creates tasks.",
+        inputSchema: z.object({
+            workspace_id: z.string().optional().describe("Workspace for scoping; env ALLOWED_WORKSPACE_ID overrides."),
+            intent: z.object({
+                inferredTitle: z.string().optional(),
+                why: z.string().optional(),
+                what: z.string().optional(),
+                constraints: z.array(z.string()).optional(),
+                actionItems: z.array(
+                    z.object({
+                        text: z.string(),
+                        owner: z.string().optional(),
+                        due: z.string().optional(),
+                    })
+                ).optional(),
+                openQuestions: z.array(z.string()).optional(),
+                quotes: z.array(z.string()).optional(),
+                confidence: z.any().optional(),
+                howSpillover: z.array(z.string()).optional(),
+            }).strict(),
+            client_ref: z.string().optional(),
+            project_ref: z.string().optional(),
+            play_ref: z.string().optional(),
+            run_ref: z.string().optional(),
+            note_ref: z.string().optional(),
+        }).strict(),
+        outputSchema: z.object({
+            status: z.string(),
+            note_id: z.string().nullable(),
+            tasks_created: z.number().optional(),
+            canon: z.object({
+                whyId: z.string().nullable(),
+                whatId: z.string().nullable(),
+                constraintsId: z.string().nullable(),
+            }),
+        }),
+    },
+    async ({ workspace_id, intent, client_ref, project_ref, play_ref, run_ref, note_ref }) => {
+        try {
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+            const resolvedWorkspaceId = allowedWorkspaceId ?? workspace_id;
+
+            if (allowedWorkspaceId && workspace_id && workspace_id !== allowedWorkspaceId) {
+                const message = "Workspace ID mismatch: request not allowed for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { status: "error", note_id: null, tasks_created: 0, canon: { whyId: null, whatId: null, constraintsId: null } },
+                };
+            }
+
+            const canon = await bankCanonBlocks(intent as any, resolvedWorkspaceId || undefined, {
+                clientRef: client_ref,
+                projectRef: project_ref,
+                playRef: play_ref,
+                runRef: run_ref,
+                noteRef: note_ref,
+            });
+
+            const note = await writeIntentNote(intent as any, {
+                clientRef: client_ref,
+                projectRef: project_ref,
+                playRef: play_ref,
+                canonIds: canon,
+                workspaceId: resolvedWorkspaceId,
+            }, resolvedWorkspaceId || undefined);
+
+            const tasks = await taskifyIntent(intent as any, {
+                clientRef: client_ref,
+                projectRef: project_ref,
+                noteRef: note.noteId,
+                playRef: play_ref,
+                runRef: run_ref,
+                workspaceId: resolvedWorkspaceId,
+            }, resolvedWorkspaceId || undefined);
+
+            return {
+                content: [{ type: "text", text: "Intent approved and persisted." }],
+                structuredContent: {
+                    status: "ok",
+                    note_id: note.noteId,
+                    tasks_created: tasks.taskCount,
+                    canon,
+                },
+            };
+        } catch (error: any) {
+            console.error("Intent approval failed:", error);
+            const message = error?.message || "Unknown error approving intent.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: {
+                    status: "error",
+                    note_id: null,
+                    tasks_created: 0,
+                    canon: { whyId: null, whatId: null, constraintsId: null },
+                },
             };
         }
     }
