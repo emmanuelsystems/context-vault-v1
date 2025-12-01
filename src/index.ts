@@ -2,6 +2,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getPrisma } from "./lib/prisma.js";
+import { extractIntent } from "./lib/intentExtractor.js";
+import { bankCanonBlocks } from "./lib/bankCanonBlocks.js";
 import * as z from "zod";
 
 const server = new McpServer({
@@ -458,5 +460,63 @@ server.registerTool(
     }
 );
 
+// --- Context Ingestion Tool (cv_ingest_context) ---
+server.registerTool(
+    "cv_ingest_context",
+    {
+        title: "Ingest Context",
+        description: "Ingest raw text, extract intent (Why/What/Constraints), and optionally bank Canon blocks.",
+        inputSchema: z.object({
+            raw_text: z.string().describe("Unstructured text to interpret (e.g., chat transcript, form dump)."),
+            workspace_id: z.string().optional().describe("Workspace for scoping; env ALLOWED_WORKSPACE_ID overrides."),
+            bank: z.boolean().optional().describe("If true, bank WHY/WHAT/CONSTRAINTS Canon blocks immediately."),
+        }).strict(),
+        outputSchema: z.object({
+            status: z.string(),
+            intent: z.any(),
+            banked: z
+                .object({
+                    whyId: z.string().nullable().optional(),
+                    whatId: z.string().nullable().optional(),
+                    constraintsId: z.string().nullable().optional(),
+                })
+                .nullable()
+                .optional(),
+        }),
+    },
+    async ({ raw_text, workspace_id, bank }) => {
+        try {
+            const allowedWorkspaceId = process.env.ALLOWED_WORKSPACE_ID;
+            const resolvedWorkspaceId = allowedWorkspaceId ?? workspace_id;
+
+            if (allowedWorkspaceId && workspace_id && workspace_id !== allowedWorkspaceId) {
+                const message = "Workspace ID mismatch: request not allowed for this workspace.";
+                return {
+                    content: [{ type: "text", text: message }],
+                    structuredContent: { status: "error", intent: null, banked: null },
+                };
+            }
+
+            const intent = extractIntent(raw_text);
+
+            let banked = null;
+            if (bank) {
+                banked = await bankCanonBlocks(intent, resolvedWorkspaceId || undefined, {});
+            }
+
+            return {
+                content: [{ type: "text", text: "Intent extracted." }],
+                structuredContent: { status: "ok", intent, banked },
+            };
+        } catch (error: any) {
+            console.error("Context ingestion failed:", error);
+            const message = error?.message || "Unknown error ingesting context.";
+            return {
+                content: [{ type: "text", text: message }],
+                structuredContent: { status: "error", intent: null, banked: null },
+            };
+        }
+    }
+);
 
 export { server };
